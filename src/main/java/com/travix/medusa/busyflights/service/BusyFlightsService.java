@@ -26,16 +26,11 @@ import javax.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
 import com.travix.medusa.busyflights.comparator.AirlineResultComparator;
 import com.travix.medusa.busyflights.domain.busyflights.BusyFlightsRequest;
@@ -55,6 +50,9 @@ public class BusyFlightsService {
 	@Autowired
 	Validator validator;
 	
+	@Autowired
+	RestTemplateService templateService;
+	
 	@Value( value = "${crazy.air.http.url}" )
 	String cUrl;
 	
@@ -62,7 +60,6 @@ public class BusyFlightsService {
 	String tUrl;
 	
 	@ResponseBody
-	@SuppressWarnings("unchecked")
 	@RequestMapping( value = { "/busy/*" }, consumes = "application/json", produces = "application/json" )
 	public Object getCrazyAirResponse(@RequestBody BusyFlightsRequest request) {
 		
@@ -75,16 +72,8 @@ public class BusyFlightsService {
 		
 		List<BusyFlightsResponse> responseList = new ArrayList<BusyFlightsResponse>();
 		
-		RestTemplate restTemplate = new RestTemplate();
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		List<HttpMessageConverter<?>> list = new ArrayList<HttpMessageConverter<?>>();
-		list.add(new MappingJackson2HttpMessageConverter());
-		restTemplate.setMessageConverters(list);
-		
 		HttpEntity<CrazyAirRequest> entity = new HttpEntity<CrazyAirRequest>(buildCrazyAirRequestFromBusyFlights(request));
-		List<LinkedHashMap<Object, Object>> cResponse = restTemplate.postForObject(cUrl, entity, List.class);
+		List<LinkedHashMap<Object, Object>> cResponse = templateService.callRestTemplate(cUrl, entity);
 		
 		if (!CollectionUtils.isEmpty(cResponse)) {
 			cResponse.stream().forEach(responseMap -> {
@@ -115,15 +104,9 @@ public class BusyFlightsService {
 			});
 		}
 		
-		
-		
-		RestTemplate tRestTemplate = new RestTemplate();
-		HttpHeaders tHeaders = new HttpHeaders();
-		tHeaders.setContentType(MediaType.APPLICATION_JSON);
-		tRestTemplate.setMessageConverters(list);
-		
+
 		HttpEntity<ToughJetRequest> tEntity = new HttpEntity<ToughJetRequest>(buildToughJetRequestFromBusyFlights(request));
-		List<LinkedHashMap<Object, Object>> tResponse = tRestTemplate.postForObject(tUrl, tEntity, List.class);
+		List<LinkedHashMap<Object, Object>> tResponse = templateService.callRestTemplate(tUrl, tEntity);
 
 		
 		
