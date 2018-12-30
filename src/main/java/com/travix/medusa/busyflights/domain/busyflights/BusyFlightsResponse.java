@@ -9,6 +9,7 @@ import com.travix.medusa.busyflights.serializers.IsoDateTimeSerializer;
 
 import lombok.Data;
 
+
 @Data
 public class BusyFlightsResponse {
 	private String airline;
